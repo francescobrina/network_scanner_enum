@@ -1,12 +1,6 @@
-import tkinter as tk
-from gui.network_scanner_gui import NetworkScannerGUI
+# main.py
 
-def main():
-    root = tk.Tk()
-
-    app = NetworkScannerGUI(root)
-
-    root.mainloop()
+from gui.gui import main
 
 if __name__ == "__main__":
     main()
