@@ -7,7 +7,7 @@
 
 ## Descrizione
 
-**Network Scanner** è un'applicazione Python dotata di un'interfaccia grafica che consente di eseguire vari tipi di scansioni di rete su un indirizzo IP o URL specificato. Le funzionalità includono:
+**Network Scanner Enum** è un'applicazione Python dotata di un'interfaccia grafica che consente di eseguire vari tipi di scansioni di rete su un indirizzo IP o URL specificato. Le funzionalità includono:
 
 - **Fast Scan**: Scansione rapida delle porte comuni.
 - **Ports Scan**: Scansione dettagliata su una lista predefinita di porte.
