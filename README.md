@@ -37,7 +37,7 @@ Questa applicazione è particolarmente utile per amministratori di rete, profess
 Segui questi passaggi per installare e configurare il progetto sul tuo sistema locale.
 
 ### 1. Clona il Repository
-
+ 
 Clona il repository sul tuo computer utilizzando `git`:
 
 ```bash
