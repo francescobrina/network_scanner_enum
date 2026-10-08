@@ -5,6 +5,7 @@ from pathlib import Path
 import sys
 
 from scanners.diagnostics import FAST_PORTS, STANDARD_PORTS, scan_ports
+from reporting import compare_reports, read_baseline
 
 
 def main(argv=None) -> int:
@@ -17,6 +18,7 @@ def main(argv=None) -> int:
     parser.add_argument('--workers', type=int, default=16)
     parser.add_argument('--no-tls', action='store_true', help='Skip TLS certificate validation')
     parser.add_argument('--json', dest='json_path', type=Path, help='Save a JSON report')
+    parser.add_argument('--baseline', type=Path, help='Compare to a previous JSON report of this target')
     parser.add_argument('--authorized', action='store_true', help='Confirm scan authorization')
     args = parser.parse_args(argv)
     if not args.authorized:
@@ -31,6 +33,16 @@ def main(argv=None) -> int:
             print(f'{result.port:5d}/tcp {result.state:8s} {result.service}')
             if result.tls is not None:
                 print(f'           TLS: {json.dumps(result.tls, ensure_ascii=False)}')
+        if args.baseline:
+            changes = compare_reports(report, read_baseline(args.baseline))
+            print(f'Baseline comparison: {changes["compared_ports"]} common ports; '
+                  f'{len(changes["changes"])} state changes')
+            for change in changes['changes']:
+                print(f'  {change["port"]}/tcp {change["previous"]} -> {change["current"]}')
+            if changes['dns_changed']:
+                print('WARNING: target resolved to a different IP from baseline.')
+            if not changes['scan_completed']:
+                print('WARNING: scan was interrupted; this comparison is incomplete.')
         if args.json_path:
             args.json_path.write_text(json.dumps(report.to_dict(), indent=2, ensure_ascii=False),
                                       encoding='utf-8')

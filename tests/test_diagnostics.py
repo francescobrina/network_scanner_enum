@@ -69,5 +69,52 @@ class TargetTests(unittest.TestCase):
         json.dumps(result.to_dict())
 
 
+class ReportingTests(unittest.TestCase):
+    def report(self, state='open', port=8080):
+        from scanners.diagnostics import ScanReport, PortResult
+        return ScanReport('localhost', '127.0.0.1', '2026-10-08T12:00:00+00:00',
+                          0.1, True, [PortResult(port, state, 'unknown')])
+
+    def test_baseline_detects_changes_without_false_closed(self):
+        from reporting import compare_reports
+        baseline = {'target': 'localhost', 'resolved_ip': '127.0.0.1',
+                    'results': [{'port': 8080, 'state': 'closed'},
+                                {'port': 2222, 'state': 'open'}]}
+        diff = compare_reports(self.report(), baseline)
+        self.assertEqual(diff['newly_open'], [8080])
+        self.assertEqual(diff['baseline_ports_not_scanned'], [2222])
+        self.assertNotIn(2222, diff['no_longer_open'])
+        self.assertFalse(diff['dns_changed'])
+
+    def test_baseline_rejects_invalid_input(self):
+        from reporting import compare_reports
+        for data in ({'target': 'wrong', 'results': []},
+                     {'target': 'localhost', 'results': [None]},
+                     {'target': 'localhost', 'results': [{'port': True, 'state': 'open'}]},
+                     {'target': 'localhost', 'results': [{'port': 80, 'state': 'active'}]},
+                     {'target': 'localhost', 'results': [
+                          {'port': 80, 'state': 'open'}, {'port': 80, 'state': 'closed'}]}):
+            with self.subTest(data=data), self.assertRaises(ValueError):
+                compare_reports(self.report(), data)
+
+    def test_baseline_different_ip_warns(self):
+        from reporting import compare_reports
+        data = {'target': 'localhost', 'resolved_ip': '127.0.0.2', 'results': []}
+        self.assertTrue(compare_reports(self.report(), data)['dns_changed'])
+
+    def test_baseline_read_error(self):
+        from reporting import read_baseline
+        from pathlib import Path
+        with self.assertRaises(ValueError):
+            read_baseline(Path('/no-such-report-507d3c.json'))
+
+    def test_cli_diff_is_exportable(self):
+        from reporting import compare_reports
+        result = compare_reports(self.report(), {'target': 'localhost',
+            'resolved_ip': '127.0.0.1', 'results': []})
+        self.assertEqual(result['compared_ports'], 0)
+        json.dumps(result)
+
+
 if __name__ == '__main__':
     unittest.main()

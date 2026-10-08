@@ -1,0 +1,46 @@
+{
+  "target": "lab.example.test",
+  "resolved_ip": "192.0.2.10",
+  "started_at": "2026-10-08T09:00:00Z",
+  "duration_s": 2.1,
+  "completed": true,
+  "results": [
+    {
+      "port": 21,
+      "state": "closed",
+      "service": "FTP"
+    },
+    {
+      "port": 22,
+      "state": "open",
+      "service": "SSH",
+      "latency_ms": 10.4
+    },
+    {
+      "port": 80,
+      "state": "open",
+      "service": "HTTP",
+      "latency_ms": 9.8
+    },
+    {
+      "port": 443,
+      "state": "open",
+      "service": "HTTPS",
+      "latency_ms": 14.7,
+      "tls": {
+        "verified": true
+      }
+    },
+    {
+      "port": 445,
+      "state": "open",
+      "service": "SMB",
+      "latency_ms": 11.5
+    },
+    {
+      "port": 3389,
+      "state": "closed",
+      "service": "RDP"
+    }
+  ]
+}
