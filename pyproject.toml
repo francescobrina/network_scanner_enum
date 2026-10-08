@@ -32,7 +32,7 @@ Issues = "https://github.com/francescobrina/network_scanner_enum/issues"
 Source = "https://github.com/francescobrina/network_scanner_enum"
 
 [tool.setuptools]
-py-modules = ["cli", "main", "reporting"]
+py-modules = ["cli", "main", "reporting", "ai_assistant"]
 
 [tool.setuptools.packages.find]
 include = ["scanners*", "gui*"]
