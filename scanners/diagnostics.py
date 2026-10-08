@@ -147,6 +147,8 @@ def scan_ports(raw_target: str, ports=FAST_PORTS, *, timeout: float = 1.0,
         futures = {pool.submit(_probe, ip, hostname, p, timeout, inspect_tls): p for p in ports
                    if not cancel_event.is_set()}
         for future in as_completed(futures):
+            if future.cancelled():
+                continue
             results.append(future.result())
             if progress:
                 progress(len(results), len(futures))
