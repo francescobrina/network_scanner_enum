@@ -1,0 +1,35 @@
+name: Bug report
+description: Report a reproducible issue without exposing private target data
+title: "[Bug]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: "Remove hostnames, public IPs, credentials, and sensitive report contents before posting."
+  - type: input
+    id: version
+    attributes:
+      label: Tool version / commit
+      placeholder: 0.3.0
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Operating system
+      options: [Windows, Linux, macOS, Other]
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce safely
+      description: Only use localhost or systems you are authorized to test.
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected versus actual result
+    validations:
+      required: true

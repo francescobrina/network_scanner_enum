@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=77", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brina-network-scanner"
+version = "0.3.0"
+description = "Bounded TCP network diagnostics for authorized hosts, with desktop GUI and JSON reporting"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [{name = "Francesco Brina"}]
+keywords = ["network", "diagnostics", "security", "tcp", "tls"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "Topic :: System :: Networking :: Monitoring",
+  "Topic :: System :: Systems Administration",
+]
+dependencies = []
+
+[project.optional-dependencies]
+smb = ["pysmb>=1.2.9"]
+
+[project.scripts]
+network-scan = "cli:main"
+network-scan-gui = "gui.gui:main"
+
+[project.urls]
+Homepage = "https://github.com/francescobrina/network_scanner_enum"
+Issues = "https://github.com/francescobrina/network_scanner_enum/issues"
+Source = "https://github.com/francescobrina/network_scanner_enum"
+
+[tool.setuptools]
+py-modules = ["cli", "main", "reporting"]
+
+[tool.setuptools.packages.find]
+include = ["scanners*", "gui*"]

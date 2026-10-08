@@ -1,10 +1,12 @@
-name: Test
+name: Tests and distribution
 on:
   push:
     branches: [main]
   pull_request:
+permissions:
+  contents: read
 jobs:
-  test:
+  tests:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -16,6 +18,14 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - name: Check syntax
-        run: python -m compileall -q cli.py scanners gui
-      - name: Run local-only unit tests
+        run: python -m compileall -q cli.py reporting.py scanners gui tests
+      - name: Unit tests (localhost and mocks only)
         run: python -m unittest discover -s tests -v
+      - name: Build wheel and source distribution
+        run: |
+          python -m pip install --upgrade build
+          python -m build
+      - name: Install and inspect entry point
+        run: |
+          python -m pip install dist/*.whl
+          network-scan --help

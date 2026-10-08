@@ -1,1 +1,2 @@
-pysmb
+# Base scanner/CLI require only the Python standard library.
+# Optional legacy SMB enumeration: pip install '.[smb]'
