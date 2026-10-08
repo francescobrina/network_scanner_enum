@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "brina-network-scanner"
 version = "0.3.0"
-description = "Bounded TCP network diagnostics for authorized hosts, with desktop GUI and JSON reporting"
+description = "PortDrift: local-first authorized TCP diagnostics, Nmap report interoperability and exposure drift"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

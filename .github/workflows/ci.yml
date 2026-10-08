@@ -24,8 +24,11 @@ jobs:
       - name: GUI smoke test in virtual display
         run: |
           xvfb-run -a env GUI_SMOKE=1 python -m unittest tests.test_gui_smoke -v
-      - name: Node.js dashboard tests
-        run: node --test dashboard/tests/*.test.mjs
+      - name: Node.js dashboard syntax and tests
+        run: |
+          node --check dashboard/app.mjs
+          node --check dashboard/logic.mjs
+          node --test dashboard/tests/*.test.mjs
       - name: Build wheel and source distribution
         run: |
           python -m pip install --upgrade build
@@ -60,5 +63,5 @@ jobs:
           gh release create v0.3.0 dist/*.whl dist/*.tar.gz portdrift-dashboard.zip \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "v0.3.0 — Network Scanner with optional local AI" \
+            --title "PortDrift v0.3.0 — Exposure intelligence and local AI" \
             --notes-file RELEASE_NOTES.md

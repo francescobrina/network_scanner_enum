@@ -1,4 +1,4 @@
-# Network Scanner Enumerator v0.3.0
+# PortDrift v0.3.0 — Network Exposure Intelligence
 
 Network diagnostics for explicitly authorized targets, with a dark desktop dashboard, local-first AI explanations, reproducible Python packaging and standard-library TCP diagnostics.
 

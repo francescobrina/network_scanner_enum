@@ -1,4 +1,4 @@
-# Network Scanner Enumerator
+# PortDrift — Network Exposure Intelligence
 
 Version **0.3.0** — **PortDrift web dashboard + local AI desktop** — an open-source Python desktop GUI and headless CLI for **authorized, bounded network diagnostics**. No cloud account, API key, or telemetry is required. Maintained by [Francesco Brina](https://github.com/francescobrina).
 

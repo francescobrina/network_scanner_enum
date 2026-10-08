@@ -40,4 +40,4 @@ Node.js 22+ is needed for development tests only; end users need just a browser.
 
 ### Import existing Nmap results
 
-You may drag/select *single-host* XML reports from `nmap -oX scan.xml <authorized-host>` directly in the browser. Parsing happens offline, and only explicitly reported TCP ports are considered. Nmap's aggregate `extraports` values do not specify which ports they represent; PortDrift conservatively treats those as missing coverage rather than marking individual ports closed. Alternatively run `network-scan-nmap scan.xml --json snapshot.json` for a normalized JSON report.
+You may select *single-host* XML reports from `nmap -oX scan.xml <authorized-host>` directly in the browser. Parsing happens offline, and only explicitly reported TCP ports are considered. Nmap's aggregate `extraports` values do not specify which ports they represent; PortDrift conservatively treats those as missing coverage rather than marking individual ports closed. Alternatively run `network-scan-nmap scan.xml --json snapshot.json` for a normalized JSON report.
