@@ -103,8 +103,11 @@ class NetworkScannerGUI:
         ttk.Combobox(side, values=self.MODES, textvariable=self.mode,
                      state="readonly").pack(fill="x")
         self.permission = tk.BooleanVar(value=False)
-        ttk.Checkbutton(side, text="I have permission to scan this host",
-                        variable=self.permission, wraplength=245).pack(anchor="w", pady=(15, 5))
+        tk.Checkbutton(side, text="I have permission to scan this host",
+                       variable=self.permission, wraplength=245, justify="left",
+                       bg=self.SIDEBAR, fg=self.TEXT, selectcolor=self.PANEL,
+                       activebackground=self.SIDEBAR, activeforeground=self.TEXT,
+                       highlightthickness=0).pack(anchor="w", pady=(15, 5))
         self.start_button = ttk.Button(side, text="▶  Start diagnostics",
                                        style="Accent.TButton", command=self.start)
         self.start_button.pack(fill="x", pady=(8, 5))
@@ -167,10 +170,19 @@ class NetworkScannerGUI:
         bottom.grid(row=3, column=0, sticky="nsew", pady=(14, 0))
         bottom.columnconfigure(0, weight=1)
         bottom.rowconfigure(1, weight=1)
-        ttk.Label(bottom, text="AI explanation · OpenAI-compatible local model",
-                  style="Sub.TLabel").grid(row=0, column=0, sticky="w")
-        ai_box = ttk.Frame(bottom, style="Card.TFrame", padding=10)
-        ai_box.grid(row=1, column=0, sticky="nsew", pady=(6, 0))
+        ttk.Label(bottom, text="Analysis & activity", style="Sub.TLabel").grid(row=0, column=0, sticky="w")
+        notebook = ttk.Notebook(bottom)
+        notebook.grid(row=1, column=0, sticky="nsew", pady=(6, 0))
+        ai_box = ttk.Frame(notebook, style="Card.TFrame", padding=10)
+        notebook.add(ai_box, text="AI EXPLANATION")
+        log_box = ttk.Frame(notebook, style="Card.TFrame", padding=10)
+        notebook.add(log_box, text="SCAN ACTIVITY")
+        self.notebook = notebook
+        self.log_tab = log_box
+        self.activity = ScrolledText(log_box, height=7, bg=self.BG, fg=self.TEXT,
+                                     insertbackground=self.TEXT, relief="flat",
+                                     wrap="word", font=("Consolas", 10))
+        self.activity.pack(fill="both", expand=True)
         ai_box.columnconfigure(1, weight=1)
         ttk.Label(ai_box, text="API URL", style="CardSmall.TLabel").grid(row=0, column=0, sticky="w")
         self.endpoint = ttk.Entry(ai_box)
@@ -217,6 +229,11 @@ class NetworkScannerGUI:
         self.stop.clear()
         self.report = None
         self.log.clear()
+        self.activity.configure(state="normal")
+        self.activity.delete("1.0", "end")
+        self.activity.configure(state="disabled")
+        if self.mode.get() in ("OS Detection", "SMB Enumeration", "FTP Enumeration"):
+            self.notebook.select(self.log_tab)
         self.progress["value"] = 0
         for k in self.count_labels:
             self.count_labels[k].configure(text="—")
@@ -280,9 +297,16 @@ class NetworkScannerGUI:
                     self._render_report(value)
                 elif kind == "text":
                     self.log.append(value)
+                    self.activity.configure(state="normal")
+                    self.activity.insert("end", value)
+                    self.activity.see("end")
+                    self.activity.configure(state="disabled")
                     self.status.set(value.strip()[:100])
                 elif kind == "error":
                     self.status.set("Error: " + value[:100])
+                    self.activity.configure(state="normal")
+                    self.activity.insert("end", "ERROR: " + value + "\n")
+                    self.activity.configure(state="disabled")
                 elif kind == "ai_result":
                     self._set_ai(value)
                 elif kind == "ai_done":

@@ -64,7 +64,7 @@ Status meanings: **open** = TCP connection succeeded; **closed** = connection re
     python -m unittest discover -s tests -v
     python -m compileall -q cli.py scanners gui
 
-GitHub Actions tests on Python 3.11, 3.12 and 3.13, builds Python distributions and verifies installed command entry points; automated network tests only use loopback or mocks.
+GitHub Actions tests on Python 3.11, 3.12 and 3.13, builds Python distributions, verifies installed command entry points and boots the GUI under a virtual X display; automated network tests only use loopback or mocks.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) and [SECURITY.md](SECURITY.md).
 Licensed under [MIT](LICENSE).
