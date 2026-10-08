@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="Local-first network exposure drift reports. Compare authorized TCP diagnostics without uploading data.">
+  <title>Exposure Intelligence · Network Scanner OSS</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar">
+      <a class="identity" href="https://github.com/francescobrina/network_scanner_enum" rel="noopener noreferrer" target="_blank">
+        <span class="logo" aria-hidden="true">◈</span><span><strong>Exposure<span class="accent">IQ</span></strong><small>Open-source network intelligence</small></span>
+      </a>
+      <div class="nav-group">
+        <div class="nav-label">WORKSPACE</div>
+        <a class="nav-link active" href="#overview"><span>▦</span> Exposure dashboard</a>
+        <a class="nav-link" href="#changes"><span>⇄</span> Change intelligence</a>
+        <a class="nav-link" href="#inventory"><span>▤</span> Port inventory</a>
+      </div>
+      <div class="side-note">
+        <span class="privacy-icon">◉</span>
+        <strong>Local-first by design</strong>
+        <p>Files are parsed in your browser. No account, telemetry, tracking, or upload to a server.</p>
+      </div>
+      <a class="gh" href="https://github.com/francescobrina/network_scanner_enum" target="_blank" rel="noopener noreferrer">☆ View project on GitHub ↗</a>
+    </aside>
+
+    <main class="main" id="overview">
+      <header class="topbar">
+        <div><div class="eyebrow">SECURITY OPERATIONS / EXPOSURE MANAGEMENT</div>
+          <h1>Know what changed.<br><span class="gradient">Protect what matters.</span></h1>
+          <p>Compare authorized scan snapshots, detect exposure drift and focus investigation on observable changes.</p>
+        </div>
+        <div class="version">v0.3.0 <span>●</span> OFFLINE</div>
+      </header>
+
+      <section class="imports" aria-label="Import reports">
+        <div class="import-tile">
+          <div class="import-title"><span>01</span> Baseline snapshot <small>Optional</small></div>
+          <p>What was visible before?</p>
+          <label class="file-action">＋ Choose baseline JSON<input id="baseline" type="file" accept=".json,application/json"></label>
+          <div id="baseline-name" class="file-caption">No baseline selected</div>
+        </div>
+        <div class="import-tile">
+          <div class="import-title"><span>02</span> Current snapshot <small>Required</small></div>
+          <p>What is visible now?</p>
+          <label class="file-action current">＋ Choose current JSON<input id="current" type="file" accept=".json,application/json"></label>
+          <div id="current-name" class="file-caption">No current report selected</div>
+        </div>
+        <div class="sample-tile">
+          <strong>Explore the dashboard</strong>
+          <p>Use fictional loopback snapshots to see how exposure drift works.</p>
+          <button id="demo" class="demo-btn" type="button">Load sample workspace →</button>
+          <button id="reset" class="reset-btn" type="button">Clear workspace</button>
+        </div>
+      </section>
+      <div id="alert" class="alert" role="alert" hidden></div>
+
+      <section class="metrics" aria-label="Exposure metrics">
+        <article class="metric"><span>PORTS OBSERVED</span><strong id="count-checked">—</strong><small>Latest snapshot</small></article>
+        <article class="metric"><span>OPEN TCP PORTS</span><strong id="count-open">—</strong><small>Connection accepted</small></article>
+        <article class="metric"><span>NEW EXPOSURES</span><strong id="count-new">—</strong><small>Compared to baseline</small></article>
+        <article class="metric"><span>STATE CHANGES</span><strong id="count-drift">—</strong><small>Including TLS verification</small></article>
+      </section>
+
+      <section class="dashboard-grid">
+        <article class="panel" id="changes">
+          <div class="panel-header"><div><div class="eyebrow">CHANGE INTELLIGENCE</div><h2>Exposure drift</h2></div><span class="pill" id="comparison-mode">Awaiting snapshot</span></div>
+          <div id="empty-changes" class="empty"><div class="empty-icon">⇄</div><h3>No evidence loaded</h3><p>Open one or two JSON reports to generate an evidence-based change summary.</p></div>
+          <div id="changes-content" hidden>
+            <div class="target-line">Target: <strong id="target">—</strong></div>
+            <div id="warning-list" class="warnings"></div>
+            <div id="findings" class="findings" aria-live="polite"></div>
+          </div>
+        </article>
+        <article class="panel posture">
+          <div class="panel-header"><div><div class="eyebrow">EVIDENCE QUALITY</div><h2>Scan coverage</h2></div></div>
+          <div class="donut" id="donut" role="img" aria-label="No scan loaded"><div class="donut-inner"><strong id="donut-value">—</strong><small>open / checked</small></div></div>
+          <div class="legend"><span><i class="dot dot-open"></i>Open TCP</span><strong id="legend-open">—</strong></div>
+          <div class="legend"><span><i class="dot dot-other"></i>Other states</span><strong id="legend-other">—</strong></div>
+          <p class="disclaimer">Open ports are observations, not confirmed vulnerabilities. Port coverage and DNS may differ across snapshots.</p>
+        </article>
+      </section>
+
+      <section class="panel inventory-panel" id="inventory">
+        <div class="panel-header"><div><div class="eyebrow">ASSET SURFACE</div><h2>Observed TCP services</h2></div><button id="export" class="outline" type="button" disabled>Export findings JSON ↓</button></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>PORT</th><th>OBSERVATION</th><th>SERVICE LABEL</th><th>TLS VERIFIED</th><th>LATENCY</th></tr></thead>
+          <tbody id="ports"><tr><td colspan="5" class="table-empty">No current scan has been loaded.</td></tr></tbody>
+        </table></div>
+      </section>
+      <footer><span>EXPOSUREIQ / FREE & OPEN SOURCE / NO CLOUD REQUIRED</span><span>Made for authorized defensive diagnostics. <a href="https://github.com/francescobrina/network_scanner_enum">Contribute ↗</a></span></footer>
+    </main>
+  </div>
+  <script type="module" src="./app.mjs"></script>
+</body>
+</html>

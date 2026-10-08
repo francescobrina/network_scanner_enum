@@ -1,6 +1,6 @@
 # Network Scanner Enumerator
 
-Version **0.3.0** — an open-source Python desktop GUI and headless CLI for **authorized, bounded network diagnostics**. No cloud account, API key, or telemetry is required. Maintained by [Francesco Brina](https://github.com/francescobrina).
+Version **0.3.0** — **ExposureIQ web dashboard + local AI desktop** — an open-source Python desktop GUI and headless CLI for **authorized, bounded network diagnostics**. No cloud account, API key, or telemetry is required. Maintained by [Francesco Brina](https://github.com/francescobrina).
 
 ![Python](https://img.shields.io/badge/Python-3.11%2B-blue) ![License](https://img.shields.io/badge/License-MIT-green)
 
@@ -34,6 +34,16 @@ If running directly from the source checkout without installation, `python cli.p
 
 Tkinter may require a separate system package (python3-tk on Debian/Ubuntu).
 The pysmb dependency is used only by the optional legacy SMB mode.
+
+## ExposureIQ web dashboard (recommended)
+
+Review changes in exposed TCP services with a modern responsive interface. The dashboard is **local-first and dependency-free**, uses no remote APIs and does not transmit JSON reports. Start it via:
+
+```sh
+python -m http.server 8000 -d dashboard
+```
+
+Open http://127.0.0.1:8000 and try the fictional demo snapshots, or use the two-file upload UI for your authorized scan reports. It can export an evidence-based change summary without falsely treating unscanned ports as closed. Development tests: `node --test dashboard/tests/*.test.mjs`. See [web dashboard documentation](dashboard/README.md).
 
 ## Desktop app
 

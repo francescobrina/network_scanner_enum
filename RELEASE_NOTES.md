@@ -3,6 +3,7 @@
 Network diagnostics for explicitly authorized targets, with a dark desktop dashboard, local-first AI explanations, reproducible Python packaging and standard-library TCP diagnostics.
 
 ## Highlights
+- New ExposureIQ responsive dashboard for local-only two-snapshot comparison, exposure changes and evidence export. Run: `python -m http.server 8000 -d dashboard`. No Node, server cloud, data upload or API key required for end users.
 - TCP fast/standard scan of one IPv4, IPv6 or hostname target with bounded concurrency and authorization gates.
 - Structured results, JSON export and baseline port-state comparisons.
 - TLS verification details and safe failure reporting.
