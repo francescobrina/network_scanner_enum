@@ -1,4 +1,4 @@
-# ExposureIQ — local-first network drift dashboard
+# PortDrift — local-first network drift dashboard
 
 A standalone modern HTML, CSS and JavaScript dashboard for **authorized** Network Scanner Enumerator reports. No web framework, CDN, JavaScript dependency, telemetry, external fonts, account or cloud processing. All report comparison happens in the browser.
 
@@ -10,7 +10,7 @@ From the repository root:
 python -m http.server 8000 -d dashboard
 ```
 
-Open http://127.0.0.1:8000 then click **Load sample workspace** (fictional TEST-NET target). You can also choose one current JSON report, or choose baseline and current reports of the same target. Reports can be produced by:
+Open http://127.0.0.1:8000 then click **Load sample workspace** (fictional TEST-NET target). You can also choose one current JSON or Nmap XML report, or compare before and after reports of the same target. Reports can be produced by:
 
 ```sh
 python cli.py 127.0.0.1 --authorized --json before.json
@@ -37,3 +37,7 @@ node --test dashboard/tests/*.test.mjs
 ```
 
 Node.js 22+ is needed for development tests only; end users need just a browser.
+
+### Import existing Nmap results
+
+You may drag/select *single-host* XML reports from `nmap -oX scan.xml <authorized-host>` directly in the browser. Parsing happens offline, and only explicitly reported TCP ports are considered. Nmap's aggregate `extraports` values do not specify which ports they represent; PortDrift conservatively treats those as missing coverage rather than marking individual ports closed. Alternatively run `network-scan-nmap scan.xml --json snapshot.json` for a normalized JSON report.

@@ -25,6 +25,7 @@ smb = ["pysmb>=1.2.9"]
 [project.scripts]
 network-scan = "cli:main"
 network-scan-gui = "gui.gui:main"
+network-scan-nmap = "import_nmap:main"
 
 [project.urls]
 Homepage = "https://github.com/francescobrina/network_scanner_enum"
@@ -32,7 +33,7 @@ Issues = "https://github.com/francescobrina/network_scanner_enum/issues"
 Source = "https://github.com/francescobrina/network_scanner_enum"
 
 [tool.setuptools]
-py-modules = ["cli", "main", "reporting", "ai_assistant"]
+py-modules = ["cli", "main", "reporting", "ai_assistant", "import_nmap"]
 
 [tool.setuptools.packages.find]
 include = ["scanners*", "gui*"]

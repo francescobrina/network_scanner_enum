@@ -10,7 +10,8 @@
 - Added explicit scan authorization, capped concurrency and port counts.
 - Added packaging metadata, MIT license, contributor/security guidance, GitHub Actions and regression tests.
 - Added a timeout to legacy TTL-based OS detection.
-- Added ExposureIQ, a modern dependency-free browser dashboard to compare reports locally, detect exposure drift and export evidence.
+- Added PortDrift, a modern dependency-free browser dashboard to compare reports locally, detect exposure drift and export evidence.
+- Added single-host Nmap XML interoperability with cautious coverage semantics.
 - Added Node.js logic tests for drift and scope boundaries.\n- Added a GUI smoke test with a virtual display and a dedicated scan activity log.
 - Introduced an updated dark desktop dashboard with service inventory, progress and JSON export.
 - Added an opt-in LM Studio/OpenAI-compatible AI explanation panel, with allowlisted and target-redacted scan metadata.

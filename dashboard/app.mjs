@@ -103,7 +103,7 @@ $("export").addEventListener("click", () => {
   if (!computed) return;
   const blob = new Blob([JSON.stringify({
     generated_at: new Date().toISOString(),
-    generator: "ExposureIQ dashboard 0.3.0",
+    generator: "PortDrift dashboard 0.3.0",
     note: "Observational network scan changes; not confirmed vulnerabilities.",
     ...computed
   }, null, 2)], {type: "application/json"});
