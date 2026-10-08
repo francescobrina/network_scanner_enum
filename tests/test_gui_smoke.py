@@ -15,8 +15,8 @@ class DesktopSmokeTests(unittest.TestCase):
             self.assertEqual(app.target.get(), "127.0.0.1")
             self.assertFalse(app.permission.get())
             self.assertFalse(app.ai_consent.get())
-            self.assertEqual(app.start_button["state"], "normal")
-            self.assertEqual(app.ai_button["state"], "disabled")
+            self.assertEqual(str(app.start_button["state"]), "normal")
+            self.assertEqual(str(app.ai_button["state"]), "disabled")
         finally:
             root.destroy()
 
