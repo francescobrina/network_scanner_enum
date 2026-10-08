@@ -11,10 +11,49 @@ function el(name, content, cls) {
 }
 function message(value) { $("alert").textContent = value || ""; $("alert").hidden = !value; }
 function filename(id, file) { text(id, file || "No report selected"); }
+function readNmapXml(xml) {
+  if (/<!(?:ENTITY|\[CDATA\[)/i.test(xml)) throw new Error("XML entities and CDATA are unsupported.");
+  // Strip Nmap's external DTD declaration before DOM parsing.
+  xml = xml.replace(/<!DOCTYPE\s+nmaprun\s*(?:SYSTEM\s+["'][^"']+["']\s*)?>/i, "");
+  if (/<!DOCTYPE/i.test(xml)) throw new Error("Unsupported XML DTD declaration.");
+  const doc = new DOMParser().parseFromString(xml, "application/xml");
+  if (doc.querySelector("parsererror") || doc.documentElement?.tagName !== "nmaprun")
+    throw new Error("Invalid Nmap XML.");
+  const hosts = [...doc.querySelectorAll("nmaprun > host")];
+  if (hosts.length !== 1) throw new Error("Nmap XML must contain exactly one host.");
+  const host = hosts[0];
+  const address = [...host.querySelectorAll("address")].find(
+    a => ["ipv4","ipv6"].includes(a.getAttribute("addrtype")));
+  const resolvedIp = address?.getAttribute("addr") || "";
+  if (!resolvedIp) throw new Error("Nmap XML is missing an IPv4/IPv6 address.");
+  const hostname = host.querySelector("hostnames > hostname")?.getAttribute("name") || resolvedIp;
+  const ports = [...host.querySelectorAll("ports > port")].filter(
+    p => p.getAttribute("protocol") === "tcp");
+  if (ports.length > 65535) throw new Error("Too many listed ports.");
+  const records = ports.map(p => ({
+    port: Number(p.getAttribute("portid")),
+    state: p.querySelector("state")?.getAttribute("state") || "error",
+    service: p.querySelector("service")?.getAttribute("name") || "unknown",
+  }));
+  const timestamp = Number(doc.documentElement.getAttribute("start"));
+  const started = Number.isFinite(timestamp) && timestamp > 0
+    ? new Date(timestamp * 1000).toISOString() : "";
+  return normalizeReport({
+    target: hostname, resolved_ip: resolvedIp,
+    started_at: started, duration_s: null,
+    completed: !host.querySelector("ports > extraports") &&
+      host.querySelector("status")?.getAttribute("state") === "up",
+    results: records
+  });
+}
 async function readFile(file) {
-  if (!file || file.size > 8 * 1024 * 1024) throw new Error("Choose a JSON report smaller than 8 MB.");
+  if (!file || file.size > 8 * 1024 * 1024)
+    throw new Error("Choose a JSON or Nmap XML file smaller than 8 MB.");
+  const raw = await file.text();
+  if (file.name.toLowerCase().endsWith(".xml"))
+    return readNmapXml(raw);
   let data;
-  try { data = JSON.parse(await file.text()); } catch { throw new Error("Invalid JSON file."); }
+  try { data = JSON.parse(raw); } catch { throw new Error("Invalid JSON file."); }
   return normalizeReport(data);
 }
 function render() {
