@@ -11,7 +11,7 @@ public class ScanEngineTest {
         assertFalse(ScanEngine.isPermittedPrivateAddress("invalid"));
         assertTrue(ScanEngine.isPermittedPrivateAddress("192.168.1.7"));
         assertTrue(ScanEngine.isPermittedPrivateAddress("172.16.5.1"));
-        assertTrue(ScanEngine.isPermittedPrivateAddress("100.104.53.3"));
+        assertTrue(ScanEngine.isPermittedPrivateAddress("100.64.1.2"));
     }
     @Test public void subnetBounded() {
         List<String> ips=ScanEngine.candidates24("192.168.50.5");
@@ -29,10 +29,10 @@ public class ScanEngineTest {
         assertEquals("TCP",ScanEngine.service(7777));
     }
     @Test public void vpnNotUsedForAutomaticWifiSweep(){
-        assertFalse(ScanEngine.isLanWifiAddress("100.64.144.1"));
-        assertTrue(ScanEngine.isPermittedPrivateAddress("100.64.144.1"));
+        assertFalse(ScanEngine.isLanWifiAddress("100.64.1.2"));
+        assertTrue(ScanEngine.isPermittedPrivateAddress("100.64.1.2"));
         assertTrue(ScanEngine.isLanWifiAddress("192.168.1.20"));
-        try{ScanEngine.candidates24("100.64.144.1");fail("VPN must not be swept");}
+        try{ScanEngine.candidates24("100.64.1.2");fail("VPN must not be swept");}
         catch(IllegalArgumentException expected){assertTrue(expected.getMessage().contains("Wi-Fi"));}
     }
     @Test public void wifiPrefixRespected(){

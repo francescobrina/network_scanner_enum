@@ -3,8 +3,8 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 public class AiClientTest {
     @Test public void addsDefaultPortAndV1() throws Exception {
-        assertEquals("http://100.104.53.3:1234/v1",AiClient.normalizeBaseUrl("http://100.104.53.3"));
-        assertEquals("http://100.104.53.3:1234/v1",AiClient.normalizeBaseUrl("100.104.53.3"));
+        assertEquals("http://100.64.1.2:1234/v1",AiClient.normalizeBaseUrl("http://100.64.1.2"));
+        assertEquals("http://100.64.1.2:1234/v1",AiClient.normalizeBaseUrl("100.64.1.2"));
         assertEquals("http://192.168.1.4:1234/v1",AiClient.normalizeBaseUrl("http://192.168.1.4:1234/v1"));
     }
     @Test public void publicHttpRejected() {
