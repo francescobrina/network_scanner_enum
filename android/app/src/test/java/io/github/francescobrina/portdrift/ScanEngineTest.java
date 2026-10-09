@@ -28,4 +28,21 @@ public class ScanEngineTest {
         assertEquals("SMB",ScanEngine.service(445));
         assertEquals("TCP",ScanEngine.service(7777));
     }
+    @Test public void vpnNotUsedForAutomaticWifiSweep(){
+        assertFalse(ScanEngine.isLanWifiAddress("100.64.144.1"));
+        assertTrue(ScanEngine.isPermittedPrivateAddress("100.64.144.1"));
+        assertTrue(ScanEngine.isLanWifiAddress("192.168.1.20"));
+        try{ScanEngine.candidates24("100.64.144.1");fail("VPN must not be swept");}
+        catch(IllegalArgumentException expected){assertTrue(expected.getMessage().contains("Wi-Fi"));}
+    }
+    @Test public void wifiPrefixRespected(){
+        java.util.List<String> result=ScanEngine.candidatesSubnet("192.168.1.130",25);
+        assertFalse(result.contains("192.168.1.10"));
+        assertTrue(result.contains("192.168.1.129"));
+        assertFalse(result.contains("192.168.1.255"));
+        assertEquals(125,result.size());
+        assertTrue(ScanEngine.inSameSubnet("192.168.1.254","192.168.1.130",25));
+        assertFalse(ScanEngine.inSameSubnet("192.168.1.20","192.168.1.130",25));
+    }
+
 }

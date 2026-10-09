@@ -88,6 +88,17 @@ public final class ScanEngine {
                 || (a[0]==192 && a[1]==168);
         }catch(IllegalArgumentException e){return false;}
     }
+    /** Test whether an authorized IPv4 target belongs to the physical Wi-Fi subnet. */
+    public static boolean inSameSubnet(String target,String source,int prefix){
+        if(prefix<1||prefix>32)return false;
+        try{
+            int[] a=parseIpv4(target),b=parseIpv4(source);
+            long aa=0,bb=0;
+            for(int i=0;i<4;i++){aa=(aa<<8)|a[i];bb=(bb<<8)|b[i];}
+            long mask=(0xffffffffL << (32-prefix)) & 0xffffffffL;
+            return (aa&mask)==(bb&mask);
+        }catch(IllegalArgumentException e){return false;}
+    }
     public static List<String> candidates24(String ip) {
         return candidatesSubnet(ip,24);
     }
