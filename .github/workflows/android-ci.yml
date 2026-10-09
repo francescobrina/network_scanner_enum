@@ -23,11 +23,12 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Install Android 17 SDK on GitHub runner
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+      - name: Set up Android SDK (current command-line tools)
+        uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - name: Install Android 17 platform and build tools
+        run: sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
