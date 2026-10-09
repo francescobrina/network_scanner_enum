@@ -4,6 +4,11 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
+import java.net.ConnectException;
+import java.net.NoRouteToHostException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+import java.util.Locale;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,8 +47,15 @@ public final class ScanEngine {
     public static final class Host {
         public final String address;
         public final List<Integer> openPorts;
+        /** Host may answer TCP with a RST even when no checked TCP port is open. */
+        public final boolean respondedWithRefusal;
         public Host(String address,List<Integer> openPorts) {
-            this.address=address;this.openPorts=Collections.unmodifiableList(new ArrayList<>(openPorts));
+            this(address,openPorts,false);
+        }
+        public Host(String address,List<Integer> openPorts,boolean respondedWithRefusal) {
+            this.address=address;
+            this.openPorts=Collections.unmodifiableList(new ArrayList<>(openPorts));
+            this.respondedWithRefusal=respondedWithRefusal;
         }
     }
     public static String service(int port) {
@@ -117,11 +129,42 @@ public final class ScanEngine {
         }
         return out;
     }
-    private static boolean connect(SocketFactory factory,String ip,int port,int timeout) {
+    /**
+     * Nmap-style unprivileged TCP response classification. A refused connection
+     * (TCP RST / ECONNREFUSED) is evidence that a host answered, not that it is
+     * absent. Errors from Android permissions and routing must NOT be reported
+     * as CLOSED.
+     */
+    static String classifyConnectionError(IOException failure) {
+        if(failure instanceof SocketTimeoutException) return "timeout";
+        if(failure instanceof NoRouteToHostException) return "unreachable";
+        String detail=failure.getMessage();
+        detail=detail==null?"":detail.toUpperCase(Locale.ROOT);
+        if(detail.contains("EACCES") || detail.contains("EPERM") ||
+           detail.contains("PERMISSION DENIED") || detail.contains("OPERATION NOT PERMITTED"))
+            return "blocked";
+        if(failure instanceof ConnectException){
+            if(detail.contains("ECONNREFUSED") || detail.contains("CONNECTION REFUSED"))
+                return "closed";
+            if(detail.contains("ENETUNREACH") || detail.contains("EHOSTUNREACH") ||
+                detail.contains("NETWORK IS UNREACHABLE") || detail.contains("NO ROUTE"))
+                return "unreachable";
+        }
+        return "error";
+    }
+    public static Port probe(SocketFactory factory,String ip,int port,int timeout) {
+        long started=System.nanoTime();
         try(Socket s=factory.createSocket()) {
             s.connect(new InetSocketAddress(ip,port),timeout);
-            return true;
-        }catch(IOException | SecurityException ex){return false;}
+            return new Port(port,"open",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-started));
+        }catch(SecurityException failure){
+            return new Port(port,"blocked",-1);
+        }catch(IOException failure){
+            return new Port(port,classifyConnectionError(failure),-1);
+        }
+    }
+    public static boolean isTcpResponse(Port p) {
+        return "open".equals(p.state) || "closed".equals(p.state);
     }
     public static List<Host> discover(String ownIp,AtomicBoolean cancelled,Progress progress) throws InterruptedException {
         return discover(ownIp,24,cancelled,progress,SocketFactory.getDefault());
@@ -138,13 +181,20 @@ public final class ScanEngine {
                 cs.submit(()->{
                     if(cancelled.get()) return null;
                     List<Integer> open=new ArrayList<>();
+                    boolean refused=false;
                     for(int port:DISCOVERY) {
                         if(cancelled.get())break;
-                        if(connect(factory,ip,port,350))open.add(port);
+                        Port answer=probe(factory,ip,port,350);
+                        if("open".equals(answer.state))open.add(port);
+                        if("closed".equals(answer.state)){
+                            // An ECONNREFUSED response proves a TCP stack answered.
+                            // We can stop discovery for this host immediately.
+                            refused=true;
+                            break;
+                        }
                     }
-                    // Only report TCP-responsive hosts; Java isReachable() cannot be
-                    // bound to the physical Wi-Fi Network and may route through a VPN.
-                    return open.isEmpty()?null:new Host(ip,open);
+                    // TCP-only discovery is still incomplete for silent hosts.
+                    return open.isEmpty()&&!refused?null:new Host(ip,open,refused);
                 });
                 submitted++;
             }
@@ -176,13 +226,7 @@ public final class ScanEngine {
             for(int port:PORTS) {
                 cs.submit(()->{
                     if(cancelled.get())return new Port(port,"error",-1);
-                    long before=System.nanoTime();
-                    try(Socket s=factory.createSocket()) {
-                        s.connect(new InetSocketAddress(address,port),800);
-                        return new Port(port,"open",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-before));
-                    }catch(java.net.SocketTimeoutException ex){return new Port(port,"timeout",-1);}
-                    catch(java.net.ConnectException ex){return new Port(port,"closed",-1);}
-                    catch(IOException | SecurityException ex){return new Port(port,"error",-1);}
+                    return probe(factory,address,port,800);
                 });
             }
             List<Port> result=new ArrayList<>();
