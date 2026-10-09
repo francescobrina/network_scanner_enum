@@ -37,3 +37,22 @@ HTTP LM Studio connections on a LAN do not provide TLS; prefer Tailscale connect
 - The new system-insets handling prevents the Android status bar from covering the app header.
 
 The true Wi-Fi discovery only reports **TCP-responsive** addresses. Devices that decline these probes will remain invisible; this is not a full host census.
+
+## Candidate v0.5.2-rc1: host-response discovery and diagnostics
+
+This is a **pre-release candidate** pending real Android/Pixel testing.
+
+- TCP RST / ECONNREFUSED is classified as **CLOSED** and proves the remote TCP stack responded. Discovery therefore includes hosts that refuse the sampled ports instead of requiring an open port. This matches the principle behind Nmap's nonprivileged TCP-connect host detection, but is not an equivalent Nmap implementation.
+- Permission or routing failures are **BLOCKED** or **UNREACHABLE**, not falsely reported as CLOSED; timeouts are separate.
+- A **Diagnostica connessione e permessi** action tests a selected authorized private address on 80, 443, 22 and 1234, and reports which network route Android selected.
+- The application still does **not** support ARP or full multi-protocol discovery, automatic service fingerprinting, or full port scanning. Android device installation and actual packet-routing verification are required.
+
+### Test sequence for maintainer
+
+1. Connect to your own Wi-Fi; confirm its IPv4 details in Android Wi-Fi settings. Temporarily disable Tailscale only if necessary to isolate the local route.
+2. Enter your **actual router or PC IPv4** manually; do not assume a 100.64/10 VPN address is the physical Wi-Fi.
+3. Authorize the test and press **Diagnostica connessione e permessi**. Capture the four statuses.
+4. Test the port scan on a **known test service** you control. A correct result must indicate OPEN for a listening port and CLOSED only upon a refusal.
+5. Only then run network discovery. If this remains empty, record the IPv4 Wi-Fi/prefix and the diagnostic statuses (remove private/sensitive details before sharing publicly).
+
+The beta build passing CI is not proof of reachability on a user's real LAN.
