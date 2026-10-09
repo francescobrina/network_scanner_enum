@@ -45,4 +45,26 @@ public class ScanEngineTest {
         assertFalse(ScanEngine.inSameSubnet("192.168.1.20","192.168.1.130",25));
     }
 
+    @Test public void refusedResponseMeansHostIsPresent(){
+        assertEquals("closed",ScanEngine.classifyConnectionError(
+            new java.net.ConnectException("connect failed: ECONNREFUSED (Connection refused)")));
+        assertTrue(ScanEngine.isTcpResponse(new ScanEngine.Port(443,"closed",-1)));
+        assertTrue(ScanEngine.isTcpResponse(new ScanEngine.Port(80,"open",5)));
+        assertFalse(ScanEngine.isTcpResponse(new ScanEngine.Port(80,"timeout",-1)));
+    }
+    @Test public void networkPermissionIsNotClosed(){
+        assertEquals("blocked",ScanEngine.classifyConnectionError(
+            new java.net.SocketException("socket failed: EPERM (Operation not permitted)")));
+        assertEquals("blocked",ScanEngine.classifyConnectionError(
+            new java.net.SocketException("EACCES (Permission denied)")));
+        assertEquals("unreachable",ScanEngine.classifyConnectionError(
+            new java.net.NoRouteToHostException("No route to host")));
+        assertEquals("unreachable",ScanEngine.classifyConnectionError(
+            new java.net.ConnectException("Network is unreachable")));
+        assertEquals("timeout",ScanEngine.classifyConnectionError(
+            new java.net.SocketTimeoutException("timeout")));
+        assertEquals("error",ScanEngine.classifyConnectionError(
+            new java.net.ConnectException("Unexpected address failure")));
+    }
+
 }
