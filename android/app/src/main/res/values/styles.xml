@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="PortDriftTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#0B1220</item>
+        <item name="android:navigationBarColor">#0B1220</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:colorAccent">#54D4E1</item>
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>
