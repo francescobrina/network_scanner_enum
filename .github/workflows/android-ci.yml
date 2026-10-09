@@ -46,3 +46,28 @@ jobs:
           name: PortDrift-Mobile-Android-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
           retention-days: 30
+
+  release-apk:
+    needs: android
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'PortDrift Mobile 0.5')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: PortDrift-Mobile-Android-APK
+          path: apk
+      - name: Publish verified APK prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          APK="apk/app-debug.apk"
+          test -s "$APK"
+          gh release create v0.5.0-beta.1 "$APK" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "PortDrift Mobile v0.5.0 beta.1 — Android native scanner" \
+            --notes-file android/RELEASE_NOTES.md \
+            --prerelease

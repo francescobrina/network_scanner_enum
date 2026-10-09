@@ -118,3 +118,11 @@ The desktop GUI uses built-in dark-styled Tkinter/ttk, and works without AI setu
 The `dashboard/` web interface can be installed as a **PWA** on compatible Android browsers when hosted on HTTPS. Its service worker caches static application assets and fictional examples only; personal scan files are **never uploaded or persisted**. It is an offline report viewer, **not yet an APK or an Android network scanner**. The next milestone will be native Android packaging and real-device usability tests. The CSV findings export removes the target hostname/IP from rows by default.
 
 To contribute a tested Android mobile experience, see `dashboard/README.md`.
+
+## Native Android network scanning (v0.5.0 beta.1)
+
+The native [PortDrift Mobile Android application](android/README.md) can actively discover responsive hosts on an authorized private Wi-Fi /24 and connect-scan 24 TCP ports **directly from your Android phone**. It exports JSON for the PortDrift browser dashboard and offers an explicit-consent connection to your own local LM Studio server.
+
+**Download the debug-signed APK from the [v0.5.0 beta release](https://github.com/francescobrina/network_scanner_enum/releases/tag/v0.5.0-beta.1)** once the verified release workflow completes. It requires Android 9+ and requests Android 17 local-network permission; real-device validation is pending.
+
+The desktop/PWA browser version remains a passive report dashboard. The APK is a separate native scanning app; neither performs exploits or vulnerability exploitation.

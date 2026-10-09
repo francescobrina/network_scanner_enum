@@ -20,7 +20,7 @@ cd android
 gradle :app:testDebugUnitTest :app:assembleDebug
 ```
 
-Install the **debug-signed APK** from the verified GitHub Actions build artifact or the versioned GitHub release. Testing on a real Android 17 device is still needed before production claims.
+Install the **debug-signed APK** from the [v0.5.0 beta.1 prerelease](https://github.com/francescobrina/network_scanner_enum/releases/tag/v0.5.0-beta.1) after GitHub Actions finishes. The APK is a prerelease test build and may require a manual Android install permission. Testing on a real Android 17 device is still needed before production claims.
 
 ## Limitations
 
