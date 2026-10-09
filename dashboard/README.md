@@ -1,6 +1,6 @@
 # PortDrift — local-first network drift dashboard
 
-A standalone modern HTML, CSS and JavaScript dashboard for **authorized** Network Scanner Enumerator reports. No web framework, CDN, JavaScript dependency, telemetry, external fonts, account or cloud processing. All report comparison happens in the browser.
+An installable, offline-first progressive web app (PWA) built with HTML, CSS and JavaScript for **authorized** Network Scanner Enumerator reports. No web framework, CDN, JavaScript dependency, telemetry, external fonts, account or cloud processing. The offline service worker caches only the static app shell and bundled fictional sample data; imported scans are never cached or uploaded. All report comparison happens in the browser.
 
 ## Try it
 
@@ -41,3 +41,17 @@ Node.js 22+ is needed for development tests only; end users need just a browser.
 ### Import existing Nmap results
 
 You may select *single-host* XML reports from `nmap -oX scan.xml <authorized-host>` directly in the browser. Parsing happens offline, and only explicitly reported TCP ports are considered. Nmap's aggregate `extraports` values do not specify which ports they represent; PortDrift conservatively treats those as missing coverage rather than marking individual ports closed. Alternatively run `network-scan-nmap scan.xml --json snapshot.json` for a normalized JSON report.
+
+## Android installation (PWA)
+
+Deploy the `dashboard/` directory over **HTTPS** (or open it on `http://localhost` when developing on that same device). In Chrome on Android, open the URL and choose **Install app** or **Add to Home screen** from the menu if available. Installation availability and icon handling vary by browser; this PWA is **not a native APK**. You may also open it as an ordinary mobile site.
+
+The browser tool is *passive*: it does not access Wi-Fi scanning APIs or Android permissions and cannot scan your network itself. You must import one or two authorized JSON/Nmap XML reports. The imported files remain in memory until you clear/reload the page. Only the app shell and fictional samples are cached for offline use.
+
+## CSV export
+
+Export findings as a simple CSV suitable for help-desk / admin triage. It excludes the target hostname/IP from file contents by default and escapes formula-like spreadsheet cell values. The filename is generated from the target name locally, so consider renaming it before sharing.
+
+## Contributor focus
+
+Useful contributions include deterministic fixtures from Nmap XML (with all real host identities replaced), accessibility and Android browser QA, performance tests for large but bounded JSON snapshots, and documentation of legitimate administrative workflows.

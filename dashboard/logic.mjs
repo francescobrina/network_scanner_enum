@@ -98,3 +98,23 @@ export function summary(report) {
 export function safeFilename(name) {
   return (name || "report").replace(/[^a-zA-Z0-9_-]/g, "_").slice(0, 50);
 }
+
+function csvCell(value) {
+  let s = String(value ?? "").replace(/\r\n?/g, "\n");
+  // Prevent spreadsheet formula injection when analysts open exported CSV.
+  if (/^[\s]*[=+\-@]/.test(s)) s = "'" + s;
+  return '"' + s.replaceAll('"', '""') + '"';
+}
+
+/** Conservative findings export: no scan targets/IPs by default. */
+export function changesToCsv(view, {includeTarget = false} = {}) {
+  if (!view || !Array.isArray(view.findings)) throw new Error("Load a report first.");
+  const fields = ["port", "service", "kind", "title", "previous", "current"];
+  const header = [...(includeTarget ? ["target"] : []), ...fields];
+  const lines = [header.map(csvCell).join(",")];
+  for (const finding of view.findings) {
+    const row = [...(includeTarget ? [view.target] : []), ...fields.map(f => finding[f] ?? "")];
+    lines.push(row.map(csvCell).join(","));
+  }
+  return lines.join("\r\n") + "\r\n";
+}

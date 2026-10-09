@@ -1,0 +1,18 @@
+{
+  "name": "PortDrift — Network Exposure Intelligence",
+  "short_name": "PortDrift",
+  "description": "Offline-first defensive report comparison. Import authorized scan data; no network scanning is performed by this app.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#090f1c",
+  "theme_color": "#101829",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
