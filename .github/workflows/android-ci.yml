@@ -65,9 +65,9 @@ jobs:
         run: |
           APK="apk/app-debug.apk"
           test -s "$APK"
-          gh release create v0.5.0-beta.1 "$APK" \
+          gh release create v0.5.1-beta.2 "$APK" \
             --repo "$GITHUB_REPOSITORY" \
             --target "$GITHUB_SHA" \
-            --title "PortDrift Mobile v0.5.0 beta.1 — Android native scanner" \
+            --title "PortDrift Mobile v0.5.1 beta.2 — Android native scanner" \
             --notes-file android/RELEASE_NOTES.md \
             --prerelease

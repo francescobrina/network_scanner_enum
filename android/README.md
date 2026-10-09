@@ -27,3 +27,13 @@ Install the **debug-signed APK** from the [v0.5.0 beta.1 prerelease](https://git
 Not Nmap or Metasploit. No root, ICMP raw socket scanning, UDP scanning, SYN scans, OS fingerprinting, exploitation, NSE scripts, stealth or arbitrary internet scanning. Host discovery will miss silent/firewalled equipment and cannot guarantee a full inventory. Public IP scanning is deliberately disabled; all probes are bounded. No real-world adoption figures are claimed.
 
 HTTP LM Studio connections on a LAN do not provide TLS; prefer Tailscale connectivity and LM Studio authentication or an HTTPS endpoint. Only connect to services you administer.
+
+## Android 17 VPN / LM Studio fixes (0.5.1-beta.2)
+
+- The app now explicitly selects a **physical Wi-Fi network, excluding VPN transports**. A 100.64.0.0/10 Tailscale or CGNAT address is still supported as a **manual target**, but must never drive an automatic Wi-Fi /24 discovery.
+- Wi-Fi sockets are bound to the physical network so a default-route VPN does not redirect local probes.
+- For LM Studio, enter either the bare IP or the complete OpenAI-compatible URL. Port `1234` and `/v1` are added automatically for HTTP. Click **Verifica server e rileva modelli** to populate the model ID.
+- You must still deliberately enable sharing before asking AI to interpret scan findings. HTTP is restricted to loopback, RFC1918, or Tailscale/CGNAT; use only servers you trust.
+- The new system-insets handling prevents the Android status bar from covering the app header.
+
+The true Wi-Fi discovery only reports **TCP-responsive** addresses. Devices that decline these probes will remain invisible; this is not a full host census.

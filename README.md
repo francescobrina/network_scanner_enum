@@ -123,6 +123,10 @@ To contribute a tested Android mobile experience, see `dashboard/README.md`.
 
 The native [PortDrift Mobile Android application](android/README.md) can actively discover responsive hosts on an authorized private Wi-Fi /24 and connect-scan 24 TCP ports **directly from your Android phone**. It exports JSON for the PortDrift browser dashboard and offers an explicit-consent connection to your own local LM Studio server.
 
-**Download the debug-signed APK from the [v0.5.0 beta release](https://github.com/francescobrina/network_scanner_enum/releases/tag/v0.5.0-beta.1)** once the verified release workflow completes. It requires Android 9+ and requests Android 17 local-network permission; real-device validation is pending.
+**Download the debug-signed APK from the [v0.5.0 beta release](https://github.com/francescobrina/network_scanner_enum/releases/tag/v0.5.1-beta.2)** once the verified release workflow completes. It requires Android 9+ and requests Android 17 local-network permission; real-device validation is pending.
 
 The desktop/PWA browser version remains a passive report dashboard. The APK is a separate native scanning app; neither performs exploits or vulnerability exploitation.
+
+### Android VPN / local AI troubleshooting
+
+Android beta v0.5.1 adds physical Wi-Fi detection separate from VPN overlays (including Tailscale), optional in-app model discovery for LM Studio and clearer connection errors. The directly installable debug APK is available in the [latest Android beta release](https://github.com/francescobrina/network_scanner_enum/releases/tag/v0.5.1-beta.2). The GitHub Actions workflow builds the APK and runs unit tests; real-device behavior remains a separate verification step.

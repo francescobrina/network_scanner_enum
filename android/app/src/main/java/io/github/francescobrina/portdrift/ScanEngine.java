@@ -18,6 +18,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.net.SocketFactory;
 
 /**
  * Read-only TCP connect diagnostics; no root, shell, exploit, stealth or privileged packets.
@@ -79,22 +80,55 @@ public final class ScanEngine {
                 || (a[0]==169 && a[1]==254);
         } catch(IllegalArgumentException e) {return false;}
     }
+    /** LAN auto discovery must never use a VPN/CGNAT 100.64/10 address as its subnet. */
+    public static boolean isLanWifiAddress(String ip) {
+        try {
+            int[] a=parseIpv4(ip);
+            return a[0]==10 || (a[0]==172 && a[1]>=16 && a[1]<=31)
+                || (a[0]==192 && a[1]==168);
+        }catch(IllegalArgumentException e){return false;}
+    }
+    /** Test whether an authorized IPv4 target belongs to the physical Wi-Fi subnet. */
+    public static boolean inSameSubnet(String target,String source,int prefix){
+        if(prefix<1||prefix>32)return false;
+        try{
+            int[] a=parseIpv4(target),b=parseIpv4(source);
+            long aa=0,bb=0;
+            for(int i=0;i<4;i++){aa=(aa<<8)|a[i];bb=(bb<<8)|b[i];}
+            long mask=(0xffffffffL << (32-prefix)) & 0xffffffffL;
+            return (aa&mask)==(bb&mask);
+        }catch(IllegalArgumentException e){return false;}
+    }
     public static List<String> candidates24(String ip) {
+        return candidatesSubnet(ip,24);
+    }
+    /** At most a single /24, respecting narrower Wi-Fi prefixes (/25..30). */
+    public static List<String> candidatesSubnet(String ip,int prefix) {
+        if(!isLanWifiAddress(ip) || prefix<1 || prefix>30)
+            throw new IllegalArgumentException("Serve un IPv4 Wi-Fi privato e un prefisso valido.");
         int[] a=parseIpv4(ip);
-        if(!isPermittedPrivateAddress(ip) || a[0]==127 || (a[0]==169 && a[1]==254))
-            throw new IllegalArgumentException("Seleziona una rete privata Wi-Fi.");
-        List<String> out=new ArrayList<>(254);
-        for(int i=1;i<=254;i++) if(i!=a[3]) out.add(a[0]+"."+a[1]+"."+a[2]+"."+i);
+        int bits=Math.max(24,prefix);
+        int octetMask=(0xff << (32-bits)) & 0xff;
+        int base=a[3]&octetMask;
+        int count=1<<(32-bits);
+        List<String> out=new ArrayList<>(Math.min(253,count));
+        for(int i=base+1;i<base+count-1;i++) {
+            if(i!=a[3])out.add(a[0]+"."+a[1]+"."+a[2]+"."+i);
+        }
         return out;
     }
-    private static boolean connect(String ip,int port,int timeout) {
-        try(Socket s=new Socket()) {
+    private static boolean connect(SocketFactory factory,String ip,int port,int timeout) {
+        try(Socket s=factory.createSocket()) {
             s.connect(new InetSocketAddress(ip,port),timeout);
             return true;
         }catch(IOException | SecurityException ex){return false;}
     }
     public static List<Host> discover(String ownIp,AtomicBoolean cancelled,Progress progress) throws InterruptedException {
-        List<String> hosts=candidates24(ownIp);
+        return discover(ownIp,24,cancelled,progress,SocketFactory.getDefault());
+    }
+    public static List<Host> discover(String ownIp,int prefix,AtomicBoolean cancelled,
+                                      Progress progress,SocketFactory factory) throws InterruptedException {
+        List<String> hosts=candidatesSubnet(ownIp,prefix);
         ExecutorService pool=Executors.newFixedThreadPool(24);
         CompletionService<Host> cs=new ExecutorCompletionService<>(pool);
         try {
@@ -106,14 +140,11 @@ public final class ScanEngine {
                     List<Integer> open=new ArrayList<>();
                     for(int port:DISCOVERY) {
                         if(cancelled.get())break;
-                        if(connect(ip,port,260))open.add(port);
+                        if(connect(factory,ip,port,350))open.add(port);
                     }
-                    boolean reachable=!open.isEmpty();
-                    if(!reachable && !cancelled.get()){
-                        try {reachable=InetAddress.getByName(ip).isReachable(260);}
-                        catch(IOException | SecurityException ignored) {}
-                    }
-                    return reachable?new Host(ip,open):null;
+                    // Only report TCP-responsive hosts; Java isReachable() cannot be
+                    // bound to the physical Wi-Fi Network and may route through a VPN.
+                    return open.isEmpty()?null:new Host(ip,open);
                 });
                 submitted++;
             }
@@ -134,6 +165,10 @@ public final class ScanEngine {
         }
     }
     public static List<Port> scanHost(String address,AtomicBoolean cancelled,Progress progress) throws InterruptedException {
+        return scanHost(address,cancelled,progress,SocketFactory.getDefault());
+    }
+    public static List<Port> scanHost(String address,AtomicBoolean cancelled,Progress progress,
+                                      SocketFactory factory) throws InterruptedException {
         if(!isPermittedPrivateAddress(address)) throw new IllegalArgumentException("Per questa versione sono consentiti IP privati e Tailscale.");
         ExecutorService pool=Executors.newFixedThreadPool(12);
         CompletionService<Port> cs=new ExecutorCompletionService<>(pool);
@@ -142,7 +177,7 @@ public final class ScanEngine {
                 cs.submit(()->{
                     if(cancelled.get())return new Port(port,"error",-1);
                     long before=System.nanoTime();
-                    try(Socket s=new Socket()) {
+                    try(Socket s=factory.createSocket()) {
                         s.connect(new InetSocketAddress(address,port),800);
                         return new Port(port,"open",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-before));
                     }catch(java.net.SocketTimeoutException ex){return new Port(port,"timeout",-1);}

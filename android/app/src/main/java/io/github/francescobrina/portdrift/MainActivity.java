@@ -17,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import javax.net.SocketFactory;
 import org.json.*;
 
 /** All network scans are explicitly initiated by the user and are bounded. */
@@ -28,6 +29,9 @@ public final class MainActivity extends Activity {
     private final AtomicBoolean stop=new AtomicBoolean(false);
     private final Handler ui=new Handler(Looper.getMainLooper());
     private String ownIp="",gateway="",lastHost="",startedAt="";
+    private String lastAiEndpoint="", lastModelId="";
+    private Network physicalWifi;
+    private int wifiPrefix=24;
     private long startedMillis;
     private Runnable pending;
     private boolean busy,complete;
@@ -72,7 +76,17 @@ public final class MainActivity extends Activity {
     }
     private void drawUI(){
         ScrollView sc=new ScrollView(this);sc.setBackgroundColor(BG);sc.setFillViewport(true);
-        LinearLayout root=vertical();root.setPadding(d(17),d(25),d(17),d(40));sc.addView(root);
+        LinearLayout root=vertical();root.setPadding(d(17),d(25),d(17),d(40));
+        // Android 15+ edge-to-edge otherwise places the header under the status bar.
+        if(Build.VERSION.SDK_INT>=35){
+            sc.setOnApplyWindowInsetsListener((v,insets)->{
+                android.graphics.Insets bars=insets.getInsets(
+                    WindowInsets.Type.systemBars() | WindowInsets.Type.displayCutout());
+                root.setPadding(d(17),d(25)+bars.top,d(17),d(40)+bars.bottom);
+                return insets;
+            });
+        }
+        sc.addView(root);
         setContentView(sc);
         put(root,label("◈  PORTDRIFT  /  ANDROID",14,TEAL,true),1);
         put(root,label("Esplora la tua rete.\nVerifica le esposizioni.",29,TEXT,true),13);
@@ -129,31 +143,52 @@ public final class MainActivity extends Activity {
         ai.setOnClickListener(v->askAI());
     }
     private void detectWifi(){
+        ownIp="";gateway="";physicalWifi=null;wifiPrefix=24;
         ConnectivityManager cm=(ConnectivityManager)getSystemService(CONNECTIVITY_SERVICE);
-        if(cm==null)return;
+        if(cm==null){wifiInfo.setText("Servizio di rete Android non disponibile.");return;}
         for(Network network:cm.getAllNetworks()){
             NetworkCapabilities caps=cm.getNetworkCapabilities(network);
-            if(caps==null||!caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI))continue;
-            LinkProperties lp=cm.getLinkProperties(network);if(lp==null)continue;
-            for(LinkAddress la:lp.getLinkAddresses()){
-                InetAddress ip=la.getAddress();
-                if(ip instanceof Inet4Address&&ScanEngine.isPermittedPrivateAddress(ip.getHostAddress())){
-                    ownIp=ip.getHostAddress();break;
+            if(caps==null||!caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+                ||caps.hasTransport(NetworkCapabilities.TRANSPORT_VPN))continue;
+            LinkProperties lp=cm.getLinkProperties(network);
+            if(lp==null)continue;
+            String iface=lp.getInterfaceName();
+            if(iface!=null&&(iface.startsWith("tun")||iface.startsWith("tap")))continue;
+            String detected="";
+            int prefix=24;
+            for(LinkAddress addr:lp.getLinkAddresses()){
+                InetAddress inet=addr.getAddress();
+                if(inet instanceof Inet4Address && ScanEngine.isLanWifiAddress(inet.getHostAddress())){
+                    detected=inet.getHostAddress();
+                    prefix=addr.getPrefixLength();
+                    break;
                 }
             }
-            for(RouteInfo rt:lp.getRoutes()){
-                InetAddress ip=rt.getGateway();
-                if(rt.isDefaultRoute()&&ip instanceof Inet4Address
-                    &&ScanEngine.isPermittedPrivateAddress(ip.getHostAddress())){
-                    gateway=ip.getHostAddress();break;
+            if(detected.isEmpty())continue;
+            physicalWifi=network;
+            ownIp=detected;
+            wifiPrefix=prefix;
+            for(RouteInfo route:lp.getRoutes()){
+                InetAddress gatewayAddress=route.getGateway();
+                if(route.isDefaultRoute() && gatewayAddress instanceof Inet4Address
+                    && ScanEngine.isLanWifiAddress(gatewayAddress.getHostAddress())){
+                    gateway=gatewayAddress.getHostAddress();
+                    break;
                 }
             }
-            if(!ownIp.isEmpty())break;
+            break;
         }
         if(!ownIp.isEmpty()){
-            wifiInfo.setText("Wi-Fi  ·  "+ownIp+(gateway.isEmpty()?"":"\nRouter  ·  "+gateway));
-            target.setText(gateway.isEmpty()?ownIp:gateway);
-        }else wifiInfo.setText("Nessuna rete Wi-Fi privata identificata. Puoi indicare un IP manualmente.");
+            wifiInfo.setText("Wi-Fi fisica  ·  "+ownIp+"/"+wifiPrefix+
+                (gateway.isEmpty()?"":"\\nGateway  ·  "+gateway)+
+                "\\nLe scansioni LAN usano questa rete anche con VPN attiva.");
+            if(!gateway.isEmpty())target.setText(gateway);
+            else target.setText(ownIp);
+        }else{
+            wifiInfo.setText("Wi-Fi locale non identificata. La VPN/Tailscale non è una sottorete Wi-Fi. "+
+                "Collegati alla Wi-Fi oppure inserisci manualmente l'IP privato di un host.");
+            target.setText("");
+        }
     }
     private void say(String message){ui.post(()->status.setText(message));}
     private void setBusy(boolean running){
@@ -189,9 +224,12 @@ public final class MainActivity extends Activity {
         stop.set(false);setBusy(true);progress.setProgress(0);
         hostTitle.setText("RICERCA DISPOSITIVI…");hosts.removeAllViews();
         say("Discovery limitato alla LAN privata /24…");
+        final String sourceIp=ownIp;
+        final int prefix=wifiPrefix;
+        final SocketFactory wifiSockets=physicalWifi.getSocketFactory();
         new Thread(()->{
             List<ScanEngine.Host> result=new ArrayList<>();
-            try{result=ScanEngine.discover(ownIp,stop,this::updateProgress);}
+            try{result=ScanEngine.discover(sourceIp,prefix,stop,this::updateProgress,wifiSockets);}
             catch(Exception e){say("Errore: "+e.getMessage());}
             List<ScanEngine.Host> found=result;
             ui.post(()->{
@@ -202,7 +240,12 @@ public final class MainActivity extends Activity {
     }
     private void showHosts(List<ScanEngine.Host> found){
         hosts.removeAllViews();hostTitle.setText("DISPOSITIVI RILEVATI  ·  "+found.size());
-        if(found.isEmpty()){put(hosts,label("Nessuna risposta. Alcuni dispositivi bloccano i probe TCP/ICMP.",12,FADED,false),0);return;}
+        if(found.isEmpty()){
+            put(hosts,label("Nessun host ha risposto alle porte TCP campione. Questo non dimostra che la LAN sia vuota.",12,FADED,false),0);
+            if(!gateway.isEmpty())put(hosts,label("Gateway configurato: "+gateway+
+                " (non verificato). Puoi selezionarlo nel campo sopra per una scansione mirata.",12,FADED,false),8);
+            return;
+        }
         for(ScanEngine.Host h:found){
             LinearLayout row=vertical();row.setPadding(d(12),d(11),d(12),d(11));
             row.setBackground(bg(0xff1b3a4c,0,10));
@@ -223,9 +266,12 @@ public final class MainActivity extends Activity {
         ports.removeAllViews();lastScan=new ArrayList<>();complete=false;
         export.setEnabled(false);ai.setEnabled(false);portTitle.setText("SCANSIONE  ·  "+ip);
         say("Verifica TCP su "+ip+"…");
+        SocketFactory path=physicalWifi!=null && !ownIp.isEmpty()
+            && ScanEngine.inSameSubnet(ip,ownIp,wifiPrefix)
+            ?physicalWifi.getSocketFactory():SocketFactory.getDefault();
         new Thread(()->{
             List<ScanEngine.Port> found=new ArrayList<>();
-            try{found=ScanEngine.scanHost(ip,stop,this::updateProgress);}
+            try{found=ScanEngine.scanHost(ip,stop,this::updateProgress,path);}
             catch(Exception e){say("Errore TCP: "+e.getMessage());}
             List<ScanEngine.Port> result=found;
             boolean full=!stop.get() && result.size()==ScanEngine.PORTS.length;
@@ -293,31 +339,88 @@ public final class MainActivity extends Activity {
     }
     private void askAI(){
         if(lastScan.isEmpty())return;
-        LinearLayout box=vertical();box.setPadding(d(18),d(12),d(18),d(8));
-        put(box,label("Indica l'endpoint del tuo LM Studio. HTTP è consentito solo su IP locali / Tailscale.",12,FADED,false),0);
-        EditText url=field("http://IP-del-PC:1234/v1");put(box,url,12);
-        EditText model=field("Nome modello attivo");put(box,model,6);
-        EditText token=field("Token opzionale");
+        LinearLayout box=vertical();
+        box.setPadding(d(18),d(12),d(18),d(8));
+        put(box,label("Inserisci l'IP del PC con LM Studio (anche Tailscale). "+
+            "La porta 1234 e /v1 vengono aggiunti automaticamente.",12,FADED,false),0);
+        EditText url=field("100.x.x.x oppure http://192.168.x.x:1234/v1");
+        url.setText(lastAiEndpoint);
+        put(box,url,11);
+        EditText model=field("Modello (puoi rilevarlo automaticamente)");
+        model.setText(lastModelId);
+        put(box,model,8);
+        EditText token=field("Token API, se richiesto");
         token.setInputType(InputType.TYPE_CLASS_TEXT|InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        put(box,token,6);
-        CheckBox consent=new CheckBox(this);consent.setText("Autorizzo l'invio dei dati TCP anonimizzati.");
+        put(box,token,8);
+        Button detect=button("◉  Verifica server e rileva modelli",false);
+        put(box,detect,10);
+        TextView hint=label("Nessun dato di scansione è inviato durante il rilevamento modelli.",11,FADED,false);
+        put(box,hint,6);
+        CheckBox consent=new CheckBox(this);
+        consent.setText("Autorizzo l'invio dei soli dati TCP anonimizzati al server scelto.");
         consent.setTextColor(TEXT);consent.setTextSize(12);put(box,consent,10);
-        new AlertDialog.Builder(this).setTitle("Analisi con AI locale").setView(box)
-            .setNegativeButton("Annulla",null)
-            .setPositiveButton("Analizza",(dlg,which)->{
-                if(!consent.isChecked()){say("Consenso AI non fornito.");return;}
-                ai.setEnabled(false);say("Interrogazione del modello…");
+        AlertDialog dialog=new AlertDialog.Builder(this).setTitle("Analisi con AI locale")
+            .setView(box).setNegativeButton("Annulla",null)
+            .setPositiveButton("Analizza",null).create();
+        detect.setOnClickListener(v->{
+            String endpoint=url.getText().toString().trim(),key=token.getText().toString();
+            try {AiClient.normalizeBaseUrl(endpoint);}
+            catch(Exception ex){hint.setText("URL non valido: "+ex.getMessage());return;}
+            detect.setEnabled(false);hint.setText("Connessione a LM Studio e lettura modelli…");
+            new Thread(()->{
+                try{
+                    List<String> models=AiClient.listModels(endpoint,key);
+                    ui.post(()->{
+                        if(dialog.isShowing()){
+                            model.setText(models.get(0));
+                            hint.setText("Connesso. Modello: "+models.get(0)+
+                                (models.size()>1?" (altri "+(models.size()-1)+" disponibili)":""));
+                            detect.setEnabled(true);
+                        }
+                    });
+                }catch(Exception ex){
+                    ui.post(()->{
+                        if(dialog.isShowing()){
+                            hint.setText("Connessione non riuscita: "+ex.getMessage());
+                            detect.setEnabled(true);
+                        }
+                    });
+                }
+            },"portdrift-model-list").start();
+        });
+        dialog.setOnShowListener(ignored->dialog.getButton(AlertDialog.BUTTON_POSITIVE)
+            .setOnClickListener(v->{
+                if(!consent.isChecked()){
+                    hint.setText("Spunta il consenso per inviare i dati TCP al server indicato.");
+                    return;
+                }
+                String endpoint=url.getText().toString().trim();
+                try{AiClient.normalizeBaseUrl(endpoint);}
+                catch(Exception ex){hint.setText("Controlla il server: "+ex.getMessage());return;}
+                lastAiEndpoint=endpoint;
+                lastModelId=model.getText().toString().trim();
+                String secret=token.getText().toString();
+                dialog.dismiss();
+                ai.setEnabled(false);say("Analisi AI in corso…");
                 List<ScanEngine.Port> snapshot=new ArrayList<>(lastScan);
-                String endpoint=url.getText().toString(),name=model.getText().toString(),
-                    key=token.getText().toString();
                 new Thread(()->{
                     try{
-                        String result=AiClient.explain(snapshot,endpoint,name,key);
-                        ui.post(()->{recommendations.setText("AI (verifica indipendentemente):\n\n"+result);
-                            ai.setEnabled(true);say("Risposta AI ricevuta.");});
-                    }catch(Exception e){ui.post(()->{ai.setEnabled(true);say("AI: "+e.getMessage());});}
+                        String answer=AiClient.explain(snapshot,endpoint,lastModelId,secret);
+                        ui.post(()->{
+                            recommendations.setText("AI locale (verifica indipendentemente):\\n\\n"+answer);
+                            ai.setEnabled(true);say("Analisi AI ricevuta.");
+                        });
+                    }catch(Exception ex){
+                        ui.post(()->{
+                            ai.setEnabled(true);
+                            recommendations.setText("Analisi AI non disponibile: "+ex.getMessage()+
+                                "\\nControlla che LM Studio sia avviato, raggiungibile e abbia un modello caricato.");
+                            say("AI: errore di connessione / modello.");
+                        });
+                    }
                 },"portdrift-ai").start();
-            }).show();
+            }));
+        dialog.show();
     }
     @Override protected void onDestroy(){stop.set(true);super.onDestroy();}
 }
