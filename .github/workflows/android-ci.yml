@@ -28,7 +28,10 @@ jobs:
         with:
           packages: 'platform-tools'
       - name: Install Android 17 platform and build tools
-        run: sdkmanager --install "platforms;android-37" "build-tools;37.0.0"
+        run: sdkmanager --install "platforms;android-37.0" "build-tools;37.0.0"
+          if [ ! -e "$ANDROID_HOME/platforms/android-37" ]; then
+            ln -s "$ANDROID_HOME/platforms/android-37.0" "$ANDROID_HOME/platforms/android-37"
+          fi
       - name: Set up Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
