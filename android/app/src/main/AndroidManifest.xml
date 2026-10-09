@@ -3,14 +3,13 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
     <uses-permission android:name="android.permission.ACCESS_LOCAL_NETWORK"/>
-
+    <uses-feature android:name="android.hardware.wifi" android:required="false"/>
     <application android:allowBackup="false"
         android:label="PortDrift Mobile"
+        android:icon="@drawable/app_icon"
         android:usesCleartextTraffic="true"
-        android:theme="@android:style/Theme.Material.NoActionBar"
-        android:supportsRtl="true">
-        <activity
-            android:name=".MainActivity"
+        android:theme="@style/PortDriftTheme">
+        <activity android:name=".MainActivity"
             android:exported="true"
             android:screenOrientation="unspecified">
             <intent-filter>
