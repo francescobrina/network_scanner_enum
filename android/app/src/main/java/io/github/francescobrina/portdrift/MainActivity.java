@@ -40,7 +40,7 @@ public final class MainActivity extends Activity {
     private TextView wifiInfo,status,hostTitle,portTitle,recommendations;
     private EditText target;
     private CheckBox authorized;
-    private Button discover,scan,cancel,export,ai;
+    private Button discover,scan,cancel,export,ai,diagnostics;
     private ProgressBar progress;
 
     @Override public void onCreate(Bundle state){
@@ -109,6 +109,8 @@ public final class MainActivity extends Activity {
             android.content.res.ColorStateList.valueOf(TEAL));put(control,authorized,12);
         discover=button("⌁  Trova dispositivi Wi-Fi",true);put(control,discover,11);
         scan=button("▣  Scansiona le porte dell'host",false);put(control,scan,8);
+        diagnostics=button("ⓘ  Diagnostica connessione e permessi",false);
+        put(control,diagnostics,8);
         cancel=button("■  Interrompi",false);cancel.setEnabled(false);put(control,cancel,8);
         progress=new ProgressBar(this,null,android.R.attr.progressBarStyleHorizontal);
         progress.setMax(100);progress.setProgressTintList(android.content.res.ColorStateList.valueOf(TEAL));
@@ -137,6 +139,7 @@ public final class MainActivity extends Activity {
         put(root,label("PortDrift Mobile 0.5 beta · MIT · Solo su reti autorizzate\nUna porta aperta non dimostra una vulnerabilità.",11,FADED,false),21);
 
         discover.setOnClickListener(v->permissionThen(this::startDiscovery));
+        diagnostics.setOnClickListener(v->permissionThen(this::diagnoseConnection));
         scan.setOnClickListener(v->permissionThen(this::startScan));
         cancel.setOnClickListener(v->{stop.set(true);say("Interruzione in corso…");});
         export.setOnClickListener(v->save());
@@ -193,7 +196,7 @@ public final class MainActivity extends Activity {
     private void say(String message){ui.post(()->status.setText(message));}
     private void setBusy(boolean running){
         busy=running;discover.setEnabled(!running);scan.setEnabled(!running);
-        cancel.setEnabled(running);
+        diagnostics.setEnabled(!running);cancel.setEnabled(running);
     }
     private void permissionThen(Runnable task){
         if(busy)return;
@@ -241,7 +244,7 @@ public final class MainActivity extends Activity {
     private void showHosts(List<ScanEngine.Host> found){
         hosts.removeAllViews();hostTitle.setText("DISPOSITIVI RILEVATI  ·  "+found.size());
         if(found.isEmpty()){
-            put(hosts,label("Nessun host ha risposto alle porte TCP campione. Questo non dimostra che la LAN sia vuota.",12,FADED,false),0);
+            put(hosts,label("Nessun host ha risposto alle porte TCP campione. Questo non dimostra che la LAN sia vuota. Usa «Diagnostica connessione e permessi».",12,FADED,false),0);
             if(!gateway.isEmpty())put(hosts,label("Gateway configurato: "+gateway+
                 " (non verificato). Puoi selezionarlo nel campo sopra per una scansione mirata.",12,FADED,false),8);
             return;
@@ -250,11 +253,48 @@ public final class MainActivity extends Activity {
             LinearLayout row=vertical();row.setPadding(d(12),d(11),d(12),d(11));
             row.setBackground(bg(0xff1b3a4c,0,10));
             put(row,label("◉  "+h.address,15,GREEN,true),0);
-            put(row,label(h.openPorts.isEmpty()?"Host raggiungibile":"Porte rilevate: "+h.openPorts,
+            put(row,label(h.openPorts.isEmpty()?"Host rilevato: risposta TCP «connessione rifiutata»"
+                :"Porte aperte tra quelle sondate: "+h.openPorts,
                 11,FADED,false),5);
             put(hosts,row,8);
             row.setOnClickListener(v->{target.setText(h.address);permissionThen(this::startScan);});
         }
+    }
+    private void diagnoseConnection(){
+        String address=target.getText().toString().trim();
+        if(!ScanEngine.isPermittedPrivateAddress(address)){
+            say("Diagnostica: inserisci un IPv4 privato, Tailscale o loopback.");
+            return;
+        }
+        final String host=address;
+        final boolean usingWifi=physicalWifi!=null && !ownIp.isEmpty()
+            && ScanEngine.inSameSubnet(host,ownIp,wifiPrefix);
+        final SocketFactory factory=usingWifi?physicalWifi.getSocketFactory():SocketFactory.getDefault();
+        final boolean granted=Build.VERSION.SDK_INT<37 ||
+            checkSelfPermission(LAN_PERMISSION)==PackageManager.PERMISSION_GRANTED;
+        setBusy(true);progress.setProgress(0);
+        say("Diagnostica TCP verso l'host selezionato…");
+        new Thread(()->{
+            final StringBuilder findings=new StringBuilder();
+            findings.append("Permesso Android LAN: ").append(granted?"CONCESSO":"NON CONCESSO").append("\\n");
+            findings.append("IPv4 Wi-Fi riconosciuto: ").append(ownIp.isEmpty()?"NO":"SÌ").append("\\n");
+            findings.append("Route test: ").append(usingWifi?"Wi-Fi fisica":"Android predefinita / VPN").append("\\n");
+            for(int port:new int[]{80,443,22,1234}){
+                ScanEngine.Port result=ScanEngine.probe(factory,host,port,1200);
+                findings.append("TCP ").append(port).append(": ").append(result.state).append("\\n");
+            }
+            findings.append("\\nOPEN = connessione riuscita. CLOSED = risposta TCP rifiutata (host ha risposto). ")
+                .append("BLOCKED = blocco di permessi. UNREACHABLE = errore di instradamento. ")
+                .append("TIMEOUT = nessuna risposta entro il limite.");
+            ui.post(()->{
+                setBusy(false);progress.setProgress(100);
+                say("Diagnostica completata.");
+                if(!isFinishing())new AlertDialog.Builder(this)
+                    .setTitle("Diagnostica rete PortDrift")
+                    .setMessage(findings.toString())
+                    .setPositiveButton("Chiudi",null).show();
+            });
+        },"portdrift-diagnostics").start();
     }
     private void startScan(){
         String ip=target.getText().toString().trim();
@@ -283,8 +323,13 @@ public final class MainActivity extends Activity {
         },"portdrift-tcp").start();
     }
     private void showPorts(List<ScanEngine.Port> data){
-        ports.removeAllViews();int count=0;StringBuilder tips=new StringBuilder();
+        ports.removeAllViews();int count=0,closed=0,blocked=0,unreachable=0,timeouts=0;
+        StringBuilder tips=new StringBuilder();
         for(ScanEngine.Port p:data){
+            if("closed".equals(p.state))closed++;
+            if("blocked".equals(p.state))blocked++;
+            if("unreachable".equals(p.state))unreachable++;
+            if("timeout".equals(p.state))timeouts++;
             if("open".equals(p.state)){
                 count++;
                 switch(p.number){
@@ -303,7 +348,13 @@ public final class MainActivity extends Activity {
             put(ports,row,10);
         }
         portTitle.setText("PORTE TCP  ·  "+count+" APERTE / "+data.size()+" VERIFICATE");
-        if(tips.length()==0)tips.append("Le porte e gli stati non provano vulnerabilità. Verifica aggiornamenti, necessità dei servizi e ACL.");
+        if(blocked>0)tips.insert(0,"ATTENZIONE: "+blocked+" probe bloccati dai permessi o da Android. Non interpretarli come porte chiuse.\\n");
+        if(unreachable>0)tips.insert(0,"ATTENZIONE: "+unreachable+" porte non raggiungibili dalla rete selezionata. Controlla route/VPN.\\n");
+        if(count==0 && closed==0 && timeouts==data.size() && !data.isEmpty())
+            tips.insert(0,"Solo timeout: non è stato dimostrato che il dispositivo sia raggiungibile.\\n");
+        if(tips.length()==0)
+            tips.append(closed>0?"Host con risposta TCP (porte rifiutate), nessuna delle porte controllate è aperta. ":"Nessuna apertura TCP verificata. ")
+                .append("La scansione non dimostra vulnerabilità né l'assenza di host.");
         recommendations.setText(tips.toString().trim());
     }
     private JSONObject report()throws Exception{
