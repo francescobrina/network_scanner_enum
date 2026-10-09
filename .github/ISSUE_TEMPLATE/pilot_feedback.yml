@@ -1,0 +1,47 @@
+name: Pilot feedback
+description: Help validate PortDrift on authorized or fictional test data
+title: "[Pilot]: "
+labels: []
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for testing PortDrift. Remove all private hostnames, IPs, credentials and report contents before posting. Use a fictional sample if possible.
+  - type: dropdown
+    id: persona
+    attributes:
+      label: What describes your use case?
+      options:
+        - Home lab
+        - Small business / IT support
+        - Local AI server maintenance
+        - Cybersecurity training
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: platform
+    attributes:
+      label: Platform
+      options:
+        - Android Chrome (PWA)
+        - Desktop browser
+        - Windows desktop application
+        - Linux desktop application
+        - CLI
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: What did you try and what happened?
+      description: Use only sanitized or fictional evidence.
+    validations:
+      required: true
+  - type: textarea
+    id: value
+    attributes:
+      label: What would make this useful enough to use again?
+    validations:
+      required: false

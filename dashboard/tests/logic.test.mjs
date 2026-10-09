@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {compare, normalizeReport, summary, safeFilename} from '../logic.mjs';
+import {compare, normalizeReport, summary, safeFilename, changesToCsv} from '../logic.mjs';
 const report = (state='closed', completed=true) => ({
  target:'127.0.0.1', resolved_ip:'127.0.0.1', started_at:'2026-10-08T09:00:00Z',
  duration_s:.1, completed, results:[{port:22,state,service:'SSH'},{port:443,state:'open',service:'HTTPS',tls:{verified:true}}]
@@ -36,4 +36,24 @@ test('single scan no inferred exposure',()=>{
 });
 test('file names are sanitized',()=>{
  assert.equal(safeFilename('test.host/../../evil'),'test_host_______evil');
+});
+
+test('CSV exports only findings, without hostnames by default', () => {
+ const change = compare(report("closed"), report("open"));
+ change.target = 'sensitive.host.internal';
+ const csv = changesToCsv(change);
+ assert.ok(csv.includes('"22"'));
+ assert.ok(!csv.includes("sensitive.host.internal"));
+ assert.ok(!csv.includes("127.0.0.1"));
+});
+test('CSV escapes dangerous formula prefixes', () => {
+ const csv = changesToCsv({target:"secret", findings:[
+   {port:80,service:'=HYPERLINK("https://evil.invalid")',kind:"state-change",title:"+cmd", previous:"closed",current:"open"}
+ ]});
+ assert.ok(csv.includes("'=HYPERLINK"));
+ assert.ok(csv.includes("'+cmd"));
+});
+test('CSV input validation', () => {
+ assert.throws(() => changesToCsv(null),/Load a report/);
+ assert.throws(() => changesToCsv({findings: 'fake'}),/Load a report/);
 });

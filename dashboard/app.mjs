@@ -1,4 +1,4 @@
-import {compare, summary, normalizeReport, safeFilename} from "./logic.mjs";
+import {compare, summary, normalizeReport, safeFilename, changesToCsv} from "./logic.mjs";
 const $ = id => document.getElementById(id);
 let current = null, baseline = null, computed = null;
 function text(id, value) { $(id).textContent = String(value); }
@@ -61,6 +61,7 @@ function render() {
   $("empty-changes").hidden = !!current;
   $("changes-content").hidden = !current;
   $("export").disabled = !current;
+  $("export-csv").disabled = !current;
   if (!current) {
     for (const id of ["count-checked", "count-open", "count-new", "count-drift", "donut-value", "legend-open", "legend-other"]) text(id, "—");
     text("comparison-mode", "Awaiting snapshot");
@@ -142,7 +143,7 @@ $("export").addEventListener("click", () => {
   if (!computed) return;
   const blob = new Blob([JSON.stringify({
     generated_at: new Date().toISOString(),
-    generator: "PortDrift dashboard 0.3.0",
+    generator: "PortDrift dashboard 0.4.0",
     note: "Observational network scan changes; not confirmed vulnerabilities.",
     ...computed
   }, null, 2)], {type: "application/json"});
@@ -153,3 +154,25 @@ $("export").addEventListener("click", () => {
   setTimeout(() => URL.revokeObjectURL(href), 1000);
 });
 render();
+
+/** CSV export deliberately uses only observed changes and warning metadata. */
+$("export-csv").addEventListener("click", () => {
+  if (!computed) return;
+  const csv = changesToCsv(computed, { includeTarget: false });
+  const blob = new Blob([csv], {type: "text/csv;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "portdrift-changes-" + safeFilename(computed.target) + ".csv";
+  document.body.append(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+// App shell only. Uploaded scan files live in memory and are never cached.
+if ("serviceWorker" in navigator && window.isSecureContext) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./sw.js", {scope: "./"}).catch(() => {
+      // The dashboard still works without installation / offline caching.
+    });
+  });
+}

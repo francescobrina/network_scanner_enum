@@ -5,14 +5,19 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="color-scheme" content="dark">
   <meta name="description" content="Local-first network exposure drift reports. Compare authorized TCP diagnostics without uploading data.">
-  <title>Exposure Intelligence · Network Scanner OSS</title>
+  <title>PortDrift · Exposure Change Intelligence</title>
   <link rel="stylesheet" href="./styles.css">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="./icon.svg">
+  <meta name="theme-color" content="#101829">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 </head>
 <body>
   <div class="shell">
     <aside class="sidebar">
       <a class="identity" href="https://github.com/francescobrina/network_scanner_enum" rel="noopener noreferrer" target="_blank">
-        <span class="logo" aria-hidden="true">◈</span><span><strong>Exposure<span class="accent">IQ</span></strong><small>Open-source network intelligence</small></span>
+        <span class="logo" aria-hidden="true">◈</span><span><strong>Port<span class="accent">Drift</span></strong><small>Open-source network intelligence</small></span>
       </a>
       <div class="nav-group">
         <div class="nav-label">WORKSPACE</div>
@@ -34,8 +39,9 @@
           <h1>Know what changed.<br><span class="gradient">Protect what matters.</span></h1>
           <p>Compare authorized scan snapshots, detect exposure drift and focus investigation on observable changes.</p>
         </div>
-        <div class="version">v0.3.0 <span>●</span> OFFLINE</div>
+        <div class="version">v0.4.0 <span>●</span> LOCAL-FIRST</div>
       </header>
+      <p class="pwa-info">Android: install from your browser on HTTPS or localhost (Add to Home screen). The app analyzes imported files offline; it does not scan the phone or local network.</p>
 
       <section class="imports" aria-label="Import reports">
         <div class="import-tile">
@@ -86,7 +92,7 @@
       </section>
 
       <section class="panel inventory-panel" id="inventory">
-        <div class="panel-header"><div><div class="eyebrow">ASSET SURFACE</div><h2>Observed TCP services</h2></div><button id="export" class="outline" type="button" disabled>Export findings JSON ↓</button></div>
+        <div class="panel-header"><div><div class="eyebrow">ASSET SURFACE</div><h2>Observed TCP services</h2></div><div class="export-actions"><button id="export-csv" class="outline" type="button" disabled>Export changes CSV ↓</button><button id="export" class="outline" type="button" disabled>Export findings JSON ↓</button></div></div>
         <div class="table-wrap"><table>
           <thead><tr><th>PORT</th><th>OBSERVATION</th><th>SERVICE LABEL</th><th>TLS VERIFIED</th><th>LATENCY</th></tr></thead>
           <tbody id="ports"><tr><td colspan="5" class="table-empty">No current scan has been loaded.</td></tr></tbody>

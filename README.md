@@ -112,3 +112,9 @@ Open a bug report with minimal reproduction steps and sanitized outputs; use pul
 The AI request includes only port number, inferred service label, TCP state and a boolean TLS verification flag; **no target name/IP, raw banners, certificate subjects or credentials**. Do not point the endpoint at a cloud provider without reviewing its terms and data handling. AI explanations are unverified advice, never evidence that a host is vulnerable. Models are not downloaded by this project and there is no auto-execution of recommendations.
 
 The desktop GUI uses built-in dark-styled Tkinter/ttk, and works without AI setup. Headless scans remain available via CLI. Visual testing across all platforms is ongoing; if you find layout issues, please open a reproducible issue.
+
+## Mobile-ready dashboard (v0.4 development)
+
+The `dashboard/` web interface can be installed as a **PWA** on compatible Android browsers when hosted on HTTPS. Its service worker caches static application assets and fictional examples only; personal scan files are **never uploaded or persisted**. It is an offline report viewer, **not yet an APK or an Android network scanner**. The next milestone will be native Android packaging and real-device usability tests. The CSV findings export removes the target hostname/IP from rows by default.
+
+To contribute a tested Android mobile experience, see `dashboard/README.md`.
